@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -21,6 +20,8 @@ import (
 	relaycommon "one-api/relay/common"
 	"one-api/relay/constant"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 type Adaptor struct {
@@ -141,6 +142,15 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, info *relaycommon.RelayInfo, re
 		if len(request.Messages) > 0 && request.Messages[0].Role == "system" {
 			request.Messages[0].Role = "developer"
 		}
+	}
+	var removeFA bool
+	if removeFirstAssistant, ok := info.ChannelSetting[constant2.RemoveFirstAssistant].(bool); ok {
+		removeFA = removeFirstAssistant
+	}
+	if removeFA && len(request.Messages) > 2 && request.Messages[0].Role == "system" && request.Messages[1].Role == "assistant" {
+		// 删除对话中第一个assistant
+		slice := request.Messages[:]
+		request.Messages = append(slice[:1], slice[2:]...)
 	}
 
 	return request, nil
